@@ -22,6 +22,10 @@ class PenumpangController extends Controller
         return view('app.search-tiket')->with('title', 'Cari Tiket');
     }
 
+    public function addPerson(){
+        return view('app.add-penumpang')->with('title', 'Data Penumpang');
+    }
+
     // Fitur Pencarian -----------------------------------------
     public function find(Request $request){
         $request->validate([
@@ -29,7 +33,6 @@ class PenumpangController extends Controller
             'tujuan' => 'required',
             'tanggal_berangkat' => 'required',
             'kelas' => 'required',
-            'jumlah' => 'required',
             'maskapai' => 'required',
         ]);
 
@@ -43,10 +46,70 @@ class PenumpangController extends Controller
         ->select(['*', 'trans.keterangan AS kode_pesawat'])
         ->first();
 
-        dd($data);
+        Session::put('order', $data);
+        return redirect()->route('penumpang.cari');
     }
 
-    // Login -----------------------------------------------
+    // Lanjut Isi data Penumpang atau Cancel ------------------------------------------------------
+    public function cancelOrder(){
+        Session::pull('order');
+        return redirect()->route('penumpang.cari');
+    }
+
+    public function addPersons(Request $request){
+        $request->validate([
+            'persons' => 'required',
+        ]);
+
+        if (Session::has('persons')) {
+            $prev = Session::get('persons');
+            Session::put('persons', $prev + $request->persons);
+        } else {
+            Session::put('persons', $request->persons);
+        }
+
+        return redirect()->route('penumpang.add');
+    }
+
+    // Booking Pesawat ----------------------------------------------------------------------------
+    public function booking(Request $request){
+        //dd(Session::get('order'), Session::get('persons'), $request);
+        for($x = 1; $x <= Session::get('persons'); $x++){
+            $request->validate([
+                "person$x" => 'required',
+                "no_kursi$x" => 'required',
+                "umur$x" => 'required',
+            ]);
+        }
+
+        include 'Functions.php';
+        $rute = Session::get('order');
+        $totalBayar = Session::get('persons') * $rute->harga;
+        
+        for($x = 1; $x <= Session::get('persons'); $x++){
+            $kodePemesanan = generateKode('pemesanan', 'PS');
+            $kursi = "no_kursi".$x;
+            $aksi = DB::table('pemesanan')
+            ->insert([
+                'kode_pemesanan' => $kodePemesanan, 'tanggal_pemesanan' => now('Asia/Jakarta'), 
+                'tempat_pemesanan' => 'online', 'id_pelanggan' => Session::get('penumpangID'), 
+                'kode_kursi' => "K".$request->$kursi, 'id_rute' => $rute->id_rute, 'tujuan' => $rute->tujuan, 
+                'tanggal_berangkat' => $rute->tanggal_berangkat, 'jam_berangkat' => $rute->jam_berangkat, 
+                'total_bayar' => $totalBayar, 'status' => 'Belum Bayar', 
+            ]);   
+        }
+
+        if ($aksi) {
+            Session::pull('order');
+            Session::pull('persons');
+            return redirect()->route('penumpang.cari');
+        } else {
+            return back()->with('error');
+        }
+        
+    }
+
+    // Login --------------------------------------------------------------------------------------
 
     public function cekLogin(Request $request){
         $request->validate([

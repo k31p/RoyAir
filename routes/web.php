@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 // Controllers ------------------------------------------------
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\PenumpangController;
+use App\Models\Penumpang;
 
 // Homepage ---------------------------------------------------
 Route::get('/', function () {
@@ -16,10 +17,14 @@ Route::get('/', function () {
 # Redirects
 Route::get('/login', [PenumpangController::class, 'login'])->name('penumpang.login');
 Route::get('/cari-tiket', [PenumpangController::class, 'searchForm'])->name('penumpang.cari');
+Route::get('/pesanan/cancel', [PenumpangController::class, 'cancelOrder'])->name('penumpang.cancel');
+Route::get('/pesanan/add-penumpang', [PenumpangController::class, 'addPerson'])->name('penumpang.add');
 
 # Proses
 Route::post('/login', [PenumpangController::class, 'cekLogin'])->name('penumpang.ceklogin');
 Route::post('/cari-tiket', [PenumpangController::class, 'find'])->name('penumpang.search');
+Route::post('/pesanan/add-penumpang', [PenumpangController::class, 'addPersons'])->name('penumpang.adds');
+Route::post('/pesanan/save-penumpang', [PenumpangController::class, 'booking'])->name('penumpang.book');
 
 // Route untuk petugas ------------------------------------------
 
